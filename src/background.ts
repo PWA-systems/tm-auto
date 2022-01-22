@@ -1,13 +1,5 @@
 "use strict";
 
-// import express from 'express';
-
-// const server = express();
-// server.get('/', (req, res) => {
-//   res.json({ msg: 'thisisit' });
-// });
-// server.listen(2131);
-
 import "./tmapi/index";
 
 import { app, protocol, BrowserWindow } from "electron";

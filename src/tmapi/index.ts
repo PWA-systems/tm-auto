@@ -5,6 +5,20 @@ import cors from "cors";
 const app = express();
 app.use(cors());
 
+import { open, all } from "@/tmapi/wrappers/sqlite3";
+
+import { join } from "path";
+const dbpath = join(__dirname, "..", "..", "MyTournament.db");
+console.log(dbpath);
+open(dbpath).then(() => {
+  all("select * from matches where match = ?", [5]).then((r) => console.log(r));
+});
+app.get("/match/:match", async (req, res) => {
+  res.send(
+    await all("select * from matches where match = ?", [req.params.match])
+  );
+});
+
 const tournament = new Tournament();
 app.use(express.json());
 app.post("/connect", async (req, res) => {

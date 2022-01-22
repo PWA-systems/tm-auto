@@ -170,6 +170,7 @@ export class Fieldset extends EventEmitter {
           //if secRem === 0 then start trans
           //else stay on screen
           if (this.matchData.secRem === 0 || this.matchData.secRem === 1) {
+            //match came to a "proper" ending
             this.timeout[0] = setTimeout(() => {
               this.setDisplay(Displays.SavedMatchResults);
             }, 5000);
