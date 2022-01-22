@@ -1,11 +1,11 @@
-import { EventEmitter } from 'events';
-import axios from 'axios';
+import { EventEmitter } from "events";
+import axios from "axios";
 
 export class TMWeb extends EventEmitter {
   private authArgs = {
-    host: 'localhost',
-    user: 'admin',
-    password: 'password',
+    host: "localhost",
+    user: "admin",
+    password: "password",
   };
   private authInterval: { timer: NodeJS.Timer | undefined; ms: number } = {
     timer: undefined,
@@ -13,13 +13,13 @@ export class TMWeb extends EventEmitter {
   };
   public axios = axios.create({
     timeout: 1000,
-    timeoutErrorMessage: 'TIMEOUT',
+    timeoutErrorMessage: "TIMEOUT",
   });
   constructor() {
     super({ captureRejections: true });
-    this.on('error', console.error);
+    this.on("error", console.error);
   }
-  async connect(args: TMWeb.Connect) {
+  async connect(args: Connect): Promise<void> {
     this.authArgs = args;
     this.axios.defaults.baseURL = `http://${args.host}`;
     await this.auth();
@@ -27,23 +27,23 @@ export class TMWeb extends EventEmitter {
   async authGuard(): Promise<void> {
     return new Promise((res, rej) => {
       this.axios
-        .get('/fieldsets')
+        .get("/fieldsets")
         .then(() => {
           res();
         })
         .catch((e) => {
-          this.emit('ERROR', {
-            from: 'TMWeb.AuthGuard()',
-            msg: 'authGuard failed; retrying auth',
+          this.emit("ERROR", {
+            from: "TMWeb.AuthGuard()",
+            msg: "authGuard failed; retrying auth",
             error: e,
           });
           const rejTimeout = setTimeout(() => {
-            rej(new Error('AuthGuardTimeout'));
+            rej(new Error("AuthGuardTimeout"));
           }, 60000);
           this.authInterval.ms = 5000;
           this.authInterval.timer = setInterval(async () => {
-            await this.auth().catch((e) => {
-              if ((e.message = 'TMWebAuthFailed')) {
+            await this.auth().catch((e: unknown) => {
+              if ((<Error>e).message === "TMWebAuthFailed") {
                 if (this.authInterval.timer)
                   clearInterval(this.authInterval.timer);
                 clearTimeout(rejTimeout);
@@ -55,16 +55,16 @@ export class TMWeb extends EventEmitter {
         });
     });
   }
-  async auth() {
+  async auth(): Promise<void> {
     try {
       //verify website is reachable
-      await this.axios.get('/').catch((error) => {
-        throw new Error('TMWebUnreachable');
+      await this.axios.get("/").catch(() => {
+        throw new Error("TMWebUnreachable");
       });
 
       //auth with website
       const res = await this.axios.post(
-        'admin/login',
+        "admin/login",
         `user=${this.authArgs.user}&password=${this.authArgs.password}&submit=`,
         {
           maxRedirects: 0,
@@ -76,45 +76,43 @@ export class TMWeb extends EventEmitter {
 
       //parse auth cookie from response
       const cookie =
-        res.headers['set-cookie'] != undefined
-          ? res.headers['set-cookie'][0]
+        res.headers["set-cookie"] != undefined
+          ? res.headers["set-cookie"][0]
           : null;
-      if (!cookie) throw new Error('TMWebAuthFailed');
+      if (!cookie) throw new Error("TMWebAuthFailed");
 
       const key = cookie.substring(
-        cookie.indexOf('user='),
-        cookie.indexOf('; expires=')
+        cookie.indexOf("user="),
+        cookie.indexOf("; expires=")
       );
       this.axios.defaults.headers.common = {
         Cookie: key,
       };
       if (this.authInterval.timer) clearInterval(this.authInterval.timer);
 
-      this.emit('NewAuth', { Cookie: key });
+      this.emit("NewAuth", { Cookie: key });
       //await all wsFieldsets reauth
     } catch (error) {
-      this.emit('ErrorAuth', {
-        msg: 'webAuthFailed',
+      this.emit("ErrorAuth", {
+        msg: "webAuthFailed",
         error: error,
       });
       throw error;
     }
   }
-  get getAuthKey() {
+  get getAuthKey(): string | null {
     return this.axios.defaults.headers.common != undefined
-      ? this.axios.defaults.headers.common.Cookie
+      ? <string>this.axios.defaults.headers.common.Cookie
       : null;
   }
-  get getHost() {
+  get getHost(): string {
     return this.authArgs.host;
   }
 }
 
-export namespace TMWeb {
-  export type User = 'admin' | 'scorekeeper';
-  export interface Connect {
-    host: string;
-    user: TMWeb.User;
-    password: string;
-  }
+type User = "admin" | "scorekeeper";
+export interface Connect {
+  host: string;
+  user: User;
+  password: string;
 }
