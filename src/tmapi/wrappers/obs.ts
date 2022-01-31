@@ -1,6 +1,6 @@
 import { EventEmitter } from "events";
 import OBSWebSocket from "obs-websocket-js";
-export interface Connect {
+export interface OBSConnect {
   host: string;
   password: string;
 }
@@ -16,7 +16,7 @@ export class OBS extends EventEmitter {
       throw new Error("OBSNotConnected");
     }
   }
-  async connect(args: Connect): Promise<void> {
+  async connect(args: OBSConnect): Promise<void> {
     await this.obs
       .connect({ address: args.host, password: args.password })
       .then(async () => {

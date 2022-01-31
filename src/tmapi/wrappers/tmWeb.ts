@@ -2,8 +2,8 @@ import { EventEmitter } from "events";
 import axios from "axios";
 
 export class TMWeb extends EventEmitter {
-  private authArgs = {
-    host: "localhost",
+  private authArgs: TMWebConnect = {
+    url: "localhost",
     user: "admin",
     password: "password",
   };
@@ -19,9 +19,9 @@ export class TMWeb extends EventEmitter {
     super({ captureRejections: true });
     this.on("error", console.error);
   }
-  async connect(args: Connect): Promise<void> {
+  async connect(args: TMWebConnect): Promise<void> {
     this.authArgs = args;
-    this.axios.defaults.baseURL = `http://${args.host}`;
+    this.axios.defaults.baseURL = `http://${args.url}`;
     await this.auth();
   }
   async authGuard(): Promise<void> {
@@ -43,6 +43,7 @@ export class TMWeb extends EventEmitter {
           this.authInterval.ms = 5000;
           this.authInterval.timer = setInterval(async () => {
             await this.auth().catch((e: unknown) => {
+              //TODO add res if successful auth
               if ((<Error>e).message === "TMWebAuthFailed") {
                 if (this.authInterval.timer)
                   clearInterval(this.authInterval.timer);
@@ -91,7 +92,7 @@ export class TMWeb extends EventEmitter {
       if (this.authInterval.timer) clearInterval(this.authInterval.timer);
 
       this.emit("NewAuth", { Cookie: key });
-      //await all wsFieldsets reauth
+      //await all wsFieldsets reAuth
     } catch (error) {
       this.emit("ErrorAuth", {
         msg: "webAuthFailed",
@@ -105,14 +106,23 @@ export class TMWeb extends EventEmitter {
       ? <string>this.axios.defaults.headers.common.Cookie
       : null;
   }
-  get getHost(): string {
-    return this.authArgs.host;
+  get getURL(): string {
+    return this.authArgs.url;
+  }
+  async getFieldsets(): Promise<TMWebFieldset[]> {
+    const res = await this.axios.get("fieldsets");
+    return res.data.fieldSets as TMWebFieldset[];
   }
 }
 
-type User = "admin" | "scorekeeper";
-export interface Connect {
-  host: string;
-  user: User;
+export interface TMWebFieldset {
+  id: number;
+  name: string;
+  type: number;
+}
+export type TMWebUser = "admin" | "scorekeeper";
+export interface TMWebConnect {
+  url: string;
+  user: TMWebUser;
   password: string;
 }

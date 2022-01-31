@@ -1,6 +1,6 @@
 import EventEmitter from "events";
 import { WebSocket } from "ws";
-import { OBS, Connect as OBSConnect } from "./wrappers/obs";
+import { OBS, OBSConnect as OBSConnect } from "./wrappers/obs";
 import { createLogger, format, transports } from "winston";
 import { join } from "path";
 export const logger = createLogger({

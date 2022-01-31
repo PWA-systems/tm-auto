@@ -1,51 +1,62 @@
 import sqlite3 from "sqlite3";
 
 export type sql = string;
-let db: sqlite3.Database;
-
-export async function open(path: string): Promise<string> {
-  return new Promise(function (resolve, reject) {
-    db = new sqlite3.Database(path, function (err) {
-      if (err) reject("Open error: " + err.message);
-      else resolve(path + " opened");
+export class Database {
+  _db: sqlite3.Database | null = null;
+  public async open(path: string): Promise<this> {
+    return new Promise((resolve, reject) => {
+      this._db = new sqlite3.Database(path, (err) => {
+        if (err) reject((<Error>err).message);
+        else resolve(this);
+      });
     });
-  });
-}
-
-// any query: insert/delete/update
-export async function run(query: sql): Promise<boolean> {
-  return new Promise(function (resolve, reject) {
-    db.run(query, function (err: unknown) {
-      if (err) reject((<Error>err).message);
-      else resolve(true);
-    });
-  });
-}
-
-// first row read
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function get(query: sql, params: any[]): Promise<any> {
-  return new Promise(function (resolve, reject) {
-    db.get(query, params, function (err, row) {
-      if (err) reject("Read error: " + err.message);
-      else {
-        resolve(row);
+  }
+  // any query: insert/delete/update
+  public async run(query: sql): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      if (!this._db) {
+        reject("DB Not Connected");
+        return;
       }
+      this._db.run(query, (err: unknown) => {
+        if (err) reject((<Error>err).message);
+        else resolve(true);
+      });
     });
-  });
-}
+  }
 
-// set of rows read
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function all(query: sql, params: any[]): Promise<any[]> {
-  return new Promise(function (resolve, reject) {
-    if (params == undefined) params = [];
-
-    db.all(query, params, function (err, rows) {
-      if (err) reject("Read error: " + err.message);
-      else {
-        resolve(rows);
+  // first row read
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public async get(query: sql, params: any[]): Promise<any> {
+    return new Promise((resolve, reject) => {
+      if (!this._db) {
+        reject("DB Not Connected");
+        return;
       }
+      this._db.get(query, params, (err, row) => {
+        if (err) reject("Read error: " + err.message);
+        else {
+          resolve(row);
+        }
+      });
     });
-  });
+  }
+
+  // set of rows read
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public async all(query: sql, params: any[]): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+      if (params == undefined) params = [];
+      if (!this._db) {
+        reject("DB Not Connected");
+        return;
+      }
+      this._db.all(query, params, (err, rows) => {
+        if (err) reject("Read error: " + err.message);
+        else {
+          resolve(rows);
+        }
+      });
+    });
+  }
 }

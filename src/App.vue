@@ -46,6 +46,10 @@
           </v-col>
         </v-row>
         <v-row>
+          <v-col>{{ fieldsets }}</v-col>
+          <v-col>{{ scenses }}</v-col>
+        </v-row>
+        <v-row>
           <v-col cols="6">
             <v-btn @click="connectTM()">Connect to TM</v-btn>
           </v-col>
@@ -53,56 +57,72 @@
             <v-btn @click="connectOBS()">Connect to OBS</v-btn>
           </v-col>
         </v-row>
+        <v-row>
+          <v-col> <v-btn @click="connectDB()">open TM</v-btn> </v-col>
+          <v-col> {{ db }} </v-col>
+        </v-row>
       </v-container>
     </v-main>
   </v-app>
 </template>
 
 <script setup lang="ts">
-import axios from 'axios';
-import { reactive } from 'vue';
+import { reactive, ref } from "vue";
+import type { TMWebUser } from "@/tmapi/wrappers/tmWeb";
+import { MainResponseTypes } from "./ipcTypes";
+//status vars
+const db = ref("DB Not Open");
+const fieldsets = ref([""]);
+const scenses = ref([""]);
+//TMWeb auth vars
 const tm = reactive({
-  address: 'localhost',
-  user: 'admin',
+  address: "localhost",
+  user: "admin",
   pass: {
-    value: null,
+    value: "t",
     show: false,
   },
 });
+
+//OBS WS auth vars
 const obs = reactive({
-  address: 'localhost:4444',
+  address: "localhost:4444",
   pass: {
-    value: null,
+    value: "2131FTW",
     show: false,
   },
   feildset: 1,
 });
+//api
 function connectTM() {
-  axios
-    .post(
-      'http://localhost:2131/connect',
-      {
-        host: tm.address,
-        user: tm.user,
-        password: tm.pass.value,
-      },
-      {}
-    )
-    .then((res) => {
-      console.log(res);
-    });
-}
-function connectOBS() {
-  axios
-    .post('http://localhost:2131/fieldsetOBS', {
-      host: obs.address,
-      password: obs.pass.value,
-      id: obs.feildset,
+  window.api
+    .call("ConnectTMWeb", {
+      url: tm.address,
+      password: tm.pass.value,
+      user: tm.user as unknown as TMWebUser,
     })
     .then((res) => {
-      console.log(res);
+      if (!(res instanceof Error))
+        fieldsets.value = res.fieldsets.map((v) => v.name);
+    })
+    .catch((err) => console.error(err));
+}
+function connectOBS() {
+  window.api
+    .call("ConnectOBS", {
+      host: obs.address,
+      password: obs.pass.value,
+    })
+    .then((res) => {
+      if (!(res instanceof Error)) scenses.value = res.scenes as string[];
     });
 }
+function connectDB() {
+  window.api.call("ConnectTMDB").then((res) => {
+    db.value = (res as MainResponseTypes["ConnectTMDB"]).msg;
+  });
+}
+// onMounted(() => {});
 </script>
 
 <style>
