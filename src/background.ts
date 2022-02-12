@@ -9,7 +9,7 @@ import installExtension, { VUEJS3_DEVTOOLS } from "electron-devtools-installer";
 import path from "path";
 // import { Tournament } from "./tmapi/tournament";
 const isDevelopment = process.env.NODE_ENV !== "production";
-console.log(process.cwd());
+// console.log(process.cwd());
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
   { scheme: "app", privileges: { secure: true, standard: true } },
@@ -186,6 +186,31 @@ ipcMain.handle(
         request: args.request,
         responseChannel: args.responseChannel,
         response: new IPCError("TMWeb fail", error as Error),
+      };
+      event.sender.send(res.responseChannel, res.response);
+      throw error;
+    }
+  }
+);
+
+ipcMain.handle(
+  "ShowMatchResults",
+  async (event, args: RendererRequest<"ShowMatchResults">) => {
+    console.log(args.args);
+    try {
+      tm.setDBPull(args.args);
+      tm.pullDB();
+      const res: MainResponse = {
+        request: args.request,
+        responseChannel: args.responseChannel,
+        response: { msg: "success" },
+      };
+      event.sender.send(res.responseChannel, res.response);
+    } catch (error) {
+      const res: MainResponse = {
+        request: args.request,
+        responseChannel: args.responseChannel,
+        response: new IPCError("ShowMatchResults fail", error as Error),
       };
       event.sender.send(res.responseChannel, res.response);
       throw error;

@@ -61,6 +61,19 @@
           <v-col> <v-btn @click="connectDB()">open TM</v-btn> </v-col>
           <v-col> {{ db }} </v-col>
         </v-row>
+        <v-row>
+          <v-col>
+            <v-text-field
+              label="ShowMatchResultsStatus"
+              v-model="ShowMatchResults"
+            ></v-text-field
+          ></v-col>
+          <v-col>
+            <v-btn @click="sendShowMatchResults()">
+              send ShowMatchResults
+            </v-btn>
+          </v-col>
+        </v-row>
       </v-container>
     </v-main>
   </v-app>
@@ -120,6 +133,14 @@ function connectOBS() {
 function connectDB() {
   window.api.call("ConnectTMDB").then((res) => {
     db.value = (res as MainResponseTypes["ConnectTMDB"]).msg;
+  });
+}
+const ShowMatchResults = ref("");
+const ShowMatchResultsStatus = ref("Send Match Results");
+function sendShowMatchResults() {
+  window.api.call("ShowMatchResults",ShowMatchResults.value).then((res) => {
+    ShowMatchResultsStatus.value = "send: " + ShowMatchResults.value;
+    ShowMatchResults.value = "";
   });
 }
 // onMounted(() => {});

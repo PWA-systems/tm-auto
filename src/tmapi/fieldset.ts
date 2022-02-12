@@ -3,6 +3,7 @@ import { WebSocket } from "ws";
 import { OBS, OBSConnect as OBSConnect } from "./wrappers/obs";
 import { createLogger, format, transports } from "winston";
 import { join } from "path";
+import { tm } from ".";
 export const logger = createLogger({
   level: "info",
   format: format.json(),
@@ -113,6 +114,12 @@ export class Fieldset extends EventEmitter {
           //*{fieldId:number,name:string,type:string}
           //if fieldId is null then display error message in front end
           //else set fieldId & obs scene
+          if (this.matchData.match.match(/Skills/)) {
+            this.setDisplay(Displays.InMatch);
+            this.timeout[0] = setTimeout(() => {
+              this.setDisplay(Displays.SkillsRankings);
+            }, 60000);
+          }
           if (this.timeout[1]) clearTimeout(this.timeout[1]); //dont double queue
           if (data.name) this.matchData.match = data.name;
           await this.syncOBS(data.fieldId);
@@ -167,19 +174,41 @@ export class Fieldset extends EventEmitter {
           //*{ type: string; fieldId: number }
 
           await this.syncOBS(data.fieldId);
+
           //if secRem === 0 then start trans
           //else stay on screen
-          if (this.matchData.secRem === 0 || this.matchData.secRem === 1) {
+          // console.log(this.matchData.match, this.matchData.fieldId)
+          // tm.setDBPull(this.matchData.match, this.matchData.fieldId); //!!!
+
+          if (
+            (this.matchData.secRem === 0 || this.matchData.secRem === 1) &&
+            !this.matchData.match.match(/Skills/)
+          ) {
             //match came to a "proper" ending
+            //TODO not in use because of new VRC overlay
+            // this.timeout[0] = setTimeout(() => {
+            //   this.setDisplay(Displays.SavedMatchResults);
+            // }, 5000);
+            // this.timeout[1] = setTimeout(() => {
+            //   this.queueNextMatch();
+            // }, 8000);
+            // this.timeout[2] = setTimeout(() => {
+            //   this.setDisplay(Displays.InMatch);
+            // }, 12500);
+            tm.setDBPull(this.matchData.match);
+            // //broadcast the match has ended
+            // io.to("QueueFS-fs-1").emit("MatchEnded", {
+            //   Id: "Q1",
+            //   FieldName: data.fieldId ? data.fieldId.toString() : "",
+            //   ScheduledTime: new Date(),
+            //   TeamIds: ["2131", "2131M"],
+            // });
+            //TODO send next 3 matches once the score is submitted
+            // SendNext3Matches(data.fieldId || 1); //TODO this should in a call back that pulls the DB until the score is sent, or timeouts
+          } else if (this.matchData.match.match(/Skills/)) {
             this.timeout[0] = setTimeout(() => {
-              this.setDisplay(Displays.SavedMatchResults);
-            }, 5000);
-            this.timeout[1] = setTimeout(() => {
-              this.queueNextMatch();
-            }, 8000);
-            this.timeout[2] = setTimeout(() => {
-              this.setDisplay(Displays.InMatch);
-            }, 12500);
+              this.setDisplay(Displays.SkillsRankings);
+            }, 30000);
           }
           this.emit("matchStopped", data); //
           logger.log(
@@ -194,7 +223,11 @@ export class Fieldset extends EventEmitter {
           break;
         case "matchAborted":
           //*{ type: string; fieldId: number }
-
+          if (this.matchData.match.match(/Skills/)) {
+            this.timeout[0] = setTimeout(() => {
+              this.setDisplay(Displays.SkillsRankings);
+            }, 30000);
+          }
           await this.syncOBS(data.fieldId);
           this.emit("matchAborted", data);
           logger.log(

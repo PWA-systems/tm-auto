@@ -5,6 +5,10 @@ module.exports = {
     },
     electronBuilder: {
       preload: "src/preload.ts",
+      builderOptions: {
+        // options placed here will be merged with default configuration and passed to electron-builder
+        extraResources: ["./extra/**/*"],
+      },
     },
   },
 };

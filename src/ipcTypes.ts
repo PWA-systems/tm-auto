@@ -30,6 +30,7 @@ export interface RendererRequestTypes {
   ConnectTMDB: void;
   ConnectTMWeb: TMWebConnect;
   ConnectOBS: OBSConnect;
+  ShowMatchResults: MatchId;
 }
 export interface MainResponseTypes {
   ConnectTMDB: { msg: string };
@@ -41,4 +42,5 @@ export interface MainResponseTypes {
     msg: string;
     scenes: string[];
   };
+  ShowMatchResults: { msg: string };
 }
